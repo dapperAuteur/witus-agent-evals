@@ -1,0 +1,28 @@
+# Local working notes (ecosystem convention — plans live on disk, not in git)
+plans/
+
+# Eval run artifacts (PRD §5.2: gitignored; reference runs are committed deliberately
+# with `git add -f runs/<run_id>` per Build Brief Milestone 7)
+runs/
+
+# Secrets — ship .env.example only, never a real .env
+.env
+.env.*
+!.env.example
+
+# Python (if the harness lands on Python)
+__pycache__/
+*.pyc
+.venv/
+.mypy_cache/
+.pytest_cache/
+.coverage
+dist/
+*.egg-info/
+
+# Node/TypeScript (if the harness lands on TS)
+node_modules/
+*.tsbuildinfo
+
+# OS/editor
+.DS_Store
