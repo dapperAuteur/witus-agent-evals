@@ -17,12 +17,13 @@ their own repos, and writes JSONL results + a markdown report.
 `eval-harness-BUILD-BRIEF.md` (how/in what order). When they conflict with each other or with
 ecosystem rules, ask BAM.
 
-## ⚠️ Stack decision pending — do not scaffold until resolved
+## Stack decision (resolved 2026-07-31): TypeScript
 
-The PRD/brief specify **Python 3.12 + pydantic + pytest**, but brief §2 says "use what the
-agents already use" and **both agents are TypeScript** LangGraph repos (pnpm + Vitest — the
-ecosystem default stack per `gemini/witus/docs/shared-ui-ux-dx.md`). This is a PRD-vs-reality
-conflict; per the brief, BAM decides. See `plans/user-tasks/02-decide-harness-language.md`.
+The PRD/brief specify Python, but brief §2 says "use what the agents already use" and both
+agents are TypeScript LangGraph repos. **BAM decided: TypeScript.** Transpose the PRD 1:1:
+pydantic → **zod v4**, pytest/pytest-cov → **Vitest + coverage**, `mypy --strict` → **strict
+tsc**, `pyproject.toml`/uv → **pnpm**, `python -m evals` → **`pnpm evals`**. PRD §5.2's file
+tree and §6's models keep their names/shapes in TS form. Agents import as workspace/path deps.
 
 ## Integrations (status)
 
@@ -30,15 +31,18 @@ conflict; per the brief, BAM decides. See `plans/user-tasks/02-decide-harness-la
   agents/infra are explicitly out of interactive SSO scope (service creds / API-key pattern
   only). This harness has no UI and no users. If a results dashboard is ever built (a v1
   non-goal), it joins as an OIDC client then.
-- **witus-inbox:** proposed — fire a signed inbox submission when a run detects regressions,
-  so failures surface in BAM's triage queue. Pending BAM decision + slug provisioning
-  (`plans/user-tasks/03-inbox-slug-and-env.md`).
-- **witus-outbox:** proposed skip for v1 — outbox is for user-facing product events that
-  become social drafts; eval runs are operator-internal. Revisit if BAM wants "teardown
-  finding" posts drafted automatically.
-- **Better Stack error monitoring:** proposed minimal — DSN-gated error reporting (inert
-  without DSN), scrubbing prompts/outputs/keys per ecosystem pattern
-  (`plans/user-tasks/04-betterstack-dsn.md`).
+- **witus-inbox:** APPROVED (2026-07-31) — when a run finishes with regressions or errors
+  out, fire one signed fire-and-forget submission (`form_type: "eval-regression"`, priority
+  high) to the inbox triage queue. Env-gated, inert until BAM provisions the slug
+  (`plans/user-tasks/03-inbox-slug-and-env.md`). Copy `witus-inbox/examples/sender.ts`
+  verbatim; never fork it.
+- **witus-outbox:** trigger APPROVED in principle (2026-07-31) — draft a social post when a
+  run surfaces a notable finding. Spec lives in `plans/future/outbox-notable-finding-trigger.md`
+  and must be fleshed out with BAM before wiring (what counts as "notable", caption template,
+  slug provisioning). Not part of Milestones 1–7.
+- **Better Stack error monitoring:** PARKED (2026-07-31) — revisit when eval runs become
+  scheduled/unattended. Task kept at `plans/user-tasks/04-betterstack-dsn.md` with status
+  Parked; do not wire a DSN path until then.
 
 Secrets: never in code. All keys via env; ship `.env.example` only.
 

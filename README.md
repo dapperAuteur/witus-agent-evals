@@ -14,8 +14,9 @@ CLI-triggered; output is JSONL results plus a markdown report.
 
 ## Status
 
-Pre-build. Spec is complete; scaffold is blocked on one decision (harness language — see
-`plans/user-tasks/02-decide-harness-language.md`).
+Pre-build. Spec is complete and the stack is decided: **TypeScript** (zod + Vitest + pnpm;
+the PRD's Python names transpose 1:1 — see CLAUDE.md). Next step is the Milestone 1 scaffold
+per the Build Brief.
 
 - [`eval-harness-PRD.md`](eval-harness-PRD.md) — what and why
 - [`eval-harness-BUILD-BRIEF.md`](eval-harness-BUILD-BRIEF.md) — how, and milestone order
