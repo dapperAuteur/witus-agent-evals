@@ -14,10 +14,14 @@ CLI-triggered; output is JSONL results plus a markdown report.
 
 ## Status
 
-Milestone 1 of 7 complete (Build Brief order): TypeScript scaffold, zod data models
-(`src/models.ts`), check/adapter registries (`src/registry.ts`), typed env loader, CLI stub.
-Stack: **TypeScript** — zod + Vitest + strict tsc + pnpm (the PRD's Python names transpose
-1:1 — see CLAUDE.md). Next: Milestone 2, deterministic checks.
+Milestone 2 of 7 complete (Build Brief order): TypeScript scaffold, zod data models
+(`src/models.ts`), check/adapter registries (`src/registry.ts`), typed env loader, CLI stub,
+and the seven deterministic checks (`src/checks/deterministic.ts`: `citation_present`,
+`within_budget`, `revisions_ok`, `valid_schema`, `routing_correct`, `citations_scoped`,
+`no_pii`) — pure functions, unit-tested pass+fail, ≥80% coverage. Stack: **TypeScript** —
+zod + Vitest + strict tsc + pnpm (the PRD's Python names transpose 1:1 — see CLAUDE.md).
+Next: Milestone 3, the LLM judge. A consolidated help/docs/video-tutorial pass is planned
+for the end of the build (`plans/03-help-docs-and-video-tutorial.md`).
 
 ## Development
 
