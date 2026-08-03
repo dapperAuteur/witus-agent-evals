@@ -21,10 +21,15 @@ LangGraph in a tsx subprocess run inside the agent's own repo (its tsconfig/`@/`
 alias/node_modules/env resolve normally), normalizes output for the checks, and reports
 telemetry — web-search calls, revision count + rev-0 draft (field-reporter), invoked
 specialists + specialist-scoped citations (coach). `pnpm test:smoke` runs one real case
-per agent end-to-end. Stack: **TypeScript** — zod + Vitest + strict tsc + pnpm (see
-CLAUDE.md). Next: Milestone 5, runner + storage + regression (+ the approved witus-inbox
-alert). A consolidated help/docs/video-tutorial pass is planned for the end of the build
-(`plans/03-help-docs-and-video-tutorial.md`).
+per agent end-to-end. **Milestone 5** adds the runner (`src/runner.ts`: the full
+case→checks→judge→CaseResult→RunSummary flow, error cases never kill a run), JSONL
+storage under `runs/<run_id>/` with a cross-run agent-output cache keyed by case-input
+hash (re-judging never re-runs an agent), baseline regression detection
+(`src/regression.ts`), and the approved witus-inbox regression alert (`src/inbox/` —
+env-gated, fire-and-forget, inert until the slug is provisioned). Stack: **TypeScript** —
+zod + Vitest + strict tsc + pnpm (see CLAUDE.md). Next: Milestone 6, the curated
+datasets. A consolidated help/docs/video-tutorial pass is planned for the end of the
+build (`plans/03-help-docs-and-video-tutorial.md`).
 
 ## Development
 
