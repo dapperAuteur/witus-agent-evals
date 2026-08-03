@@ -197,9 +197,9 @@ describe("rubric packs", () => {
 describe("judge provider selection (PRD §7: never the provider under test)", () => {
   const base = loadSettings({} as NodeJS.ProcessEnv);
 
-  it("defaults to the free cerebras judge for both providers", () => {
-    expect(resolveJudgeProvider(base, "claude")).toBe("cerebras");
-    expect(resolveJudgeProvider(base, "gemini")).toBe("cerebras");
+  it("defaults to the free openrouter judge for both providers", () => {
+    expect(resolveJudgeProvider(base, "claude")).toBe("openrouter");
+    expect(resolveJudgeProvider(base, "gemini")).toBe("openrouter");
   });
 
   it("swaps an anthropic judge off claude cases (and google off gemini)", () => {
@@ -213,7 +213,7 @@ describe("judge provider selection (PRD §7: never the provider under test)", ()
   });
 
   it("createJudgeModel fails loudly when the provider's key is missing", () => {
-    expect(() => createJudgeModel(base, "claude")).toThrow(/CEREBRAS_API_KEY/);
+    expect(() => createJudgeModel(base, "claude")).toThrow(/OPENROUTER_API_KEY/);
   });
 
   it("createJudgeModel builds against a configured free provider", () => {

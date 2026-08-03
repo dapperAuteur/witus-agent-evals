@@ -227,6 +227,33 @@ describe("citations_scoped", () => {
       citationsScoped({ citations: [] }, makeCase(), telemetry, makeAssertion("citations_scoped")),
     ).toThrow(/namespaces/);
   });
+
+  it("accepts prefix-scoped labels via metadata.namespace_prefixes", () => {
+    const meta = {
+      namespaces,
+      namespace_prefixes: { recovery: ["Recovery · "], nutrition: ["NASM CNC · "] },
+    };
+    const ok = citationsScoped(
+      {
+        citations: [
+          { specialist: "recovery", source_id: "Recovery · Sleep Practices of Athletes · p. 4" },
+          { specialist: "nutrition", source_id: "nut-1" }, // exact still works
+        ],
+      },
+      makeCase(meta),
+      telemetry,
+      makeAssertion("citations_scoped"),
+    );
+    expect(ok.passed).toBe(true);
+
+    const leak = citationsScoped(
+      { citations: [{ specialist: "nutrition", source_id: "Recovery · Sleep Practices · p. 4" }] },
+      makeCase(meta),
+      telemetry,
+      makeAssertion("citations_scoped"),
+    );
+    expect(leak.passed).toBe(false); // another namespace's prefix is contamination
+  });
 });
 
 describe("no_pii", () => {

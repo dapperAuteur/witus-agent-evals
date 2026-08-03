@@ -15,6 +15,19 @@ inlines as text. Used for:
 - long transcripts → `field_reporter/source_material/*.md`
 - `metadata.namespaces` → `coach_multiagent/kb_fixtures/namespaces.json`
 
+## Coach namespace scoping — two layers
+
+`cx.citations_scoped` accepts a citation when its source label matches either layer:
+
+1. **Exact** — `kb_fixtures/namespaces.json`, the raw academic citation strings from the
+   coach repo's `kb-fixtures/*_kb.json` (regen below).
+2. **Prefix** — `kb_fixtures/namespace_prefixes.json`. The coach's LIVE pgvector KB also
+   holds formatted corpora labeled `<Family> · <title> · p. N`; verified against the live
+   DB on 2026-08-03: nutrition = `NASM CNC`, workout = `NASM CPT` + `Training`,
+   recovery = `Recovery`, corrective = `NASM CES`. Re-verify with
+   `SELECT namespace, split_part(source, ' · ', 1), COUNT(*) FROM coach_kb GROUP BY 1,2`
+   against the coach's `STORAGE_DATABASE_URL` when its corpus changes.
+
 ## Regenerating the coach namespace map
 
 `kb_fixtures/namespaces.json` maps each specialist to the exact `source` labels its

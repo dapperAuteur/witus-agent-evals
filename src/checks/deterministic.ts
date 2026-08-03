@@ -141,7 +141,10 @@ const isScopedCitations = (v: unknown): v is ScopedCitation[] =>
  *
  * Contract for Milestone 4 adapters: normalize the coach's output so
  * `output.citations` is `[{specialist, source_id}]`, and each case's
- * `metadata.namespaces` maps specialist → its valid source ids.
+ * `metadata.namespaces` maps specialist → its valid source ids. The coach's
+ * live KB also labels formatted corpora as `<Family> · <title> · p. N`, so
+ * an optional `metadata.namespace_prefixes` maps specialist → label
+ * prefixes; a citation is in-scope on an exact match OR a prefix match.
  */
 export const citationsScoped: DeterministicCheck = (output, evalCase, _telemetry, assertion) => {
   const namespaces = evalCase.metadata["namespaces"];
@@ -150,13 +153,19 @@ export const citationsScoped: DeterministicCheck = (output, evalCase, _telemetry
       `Check for assertion "${assertion.id}" needs metadata.namespaces — fix the case in the dataset`,
     );
   }
+  const prefixes = evalCase.metadata["namespace_prefixes"] ?? {};
   const citations = output["citations"];
   if (!isScopedCitations(citations)) {
     return result(assertion, false, "output.citations missing or not [{specialist, source_id}]");
   }
   const leaks = citations.filter((c) => {
     const scope = (namespaces as Record<string, unknown>)[c.specialist];
-    return !isStringArray(scope) || !scope.includes(c.source_id);
+    const scopePrefixes = (prefixes as Record<string, unknown>)[c.specialist];
+    const exact = isStringArray(scope) && scope.includes(c.source_id);
+    const byPrefix =
+      isStringArray(scopePrefixes) &&
+      scopePrefixes.some((prefix) => c.source_id.startsWith(prefix));
+    return !exact && !byPrefix;
   });
   if (leaks.length > 0) {
     const detail = leaks.map((c) => `${c.specialist}→${c.source_id}`).join(", ");
