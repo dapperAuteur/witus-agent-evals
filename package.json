@@ -8,6 +8,7 @@
     "build": "tsc",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
+    "test:smoke": "RUN_SMOKE=1 vitest run tests/smoke/adapters.smoke.test.ts",
     "evals": "tsx cli.ts"
   },
   "dependencies": {

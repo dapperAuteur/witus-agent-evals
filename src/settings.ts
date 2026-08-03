@@ -28,6 +28,11 @@ const SettingsSchema = z.object({
   // Judge selection (PRD §7); defaults live in providers.ts
   JUDGE_PROVIDER: z.enum(JUDGE_PROVIDERS).optional(),
   JUDGE_MODEL: z.string().min(1).optional(),
+  // Agent repo checkouts (defaults: the sibling layout on BAM's machine)
+  FIELD_REPORTER_REPO: z.string().min(1).optional(),
+  COACH_REPO: z.string().min(1).optional(),
+  /** Per-case agent-run timeout; refine loops can legitimately take minutes. */
+  EVAL_AGENT_TIMEOUT_MS: z.coerce.number().int().positive().default(300_000),
   // witus-inbox regression alert (Milestone 5; provisioned via plans/user-tasks/03)
   INBOX_INGEST_URL: z.url().optional(),
   INBOX_SOURCE_SLUG: z.string().min(1).optional(),
