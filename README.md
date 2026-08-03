@@ -14,16 +14,17 @@ CLI-triggered; output is JSONL results plus a markdown report.
 
 ## Status
 
-Milestone 3 of 7 complete (Build Brief order): TypeScript scaffold, zod data models,
-check/adapter registries, the seven deterministic checks (`src/checks/deterministic.ts`),
-and the LLM judge (`src/judge/`): structured verdicts (zod-validated), retry-once-then-error
-on malformed output, an anti-sycophancy rule (a pass must quote a verbatim evidence span
-from the judged output), and versioned YAML rubric packs for both agents. The judge reuses
-the agents' 7-provider LangChain factory and **defaults to a free provider** (Cerebras
-Llama 3.3 70B; configurable via `JUDGE_PROVIDER`/`JUDGE_MODEL`) — and never judges its own
-provider's cases. Stack: **TypeScript** — zod + Vitest + strict tsc + pnpm (see CLAUDE.md).
-Next: Milestone 4, the agent adapters. A consolidated help/docs/video-tutorial pass is
-planned for the end of the build (`plans/03-help-docs-and-video-tutorial.md`).
+Milestone 4 of 7 complete (Build Brief order): scaffold + zod models + registries (M1),
+the seven deterministic checks (M2), the LLM judge with free-provider support and
+anti-sycophancy evidence rule (M3), and the **agent adapters** (M4): each invokes the real
+LangGraph in a tsx subprocess run inside the agent's own repo (its tsconfig/`@/`
+alias/node_modules/env resolve normally), normalizes output for the checks, and reports
+telemetry — web-search calls, revision count + rev-0 draft (field-reporter), invoked
+specialists + specialist-scoped citations (coach). `pnpm test:smoke` runs one real case
+per agent end-to-end. Stack: **TypeScript** — zod + Vitest + strict tsc + pnpm (see
+CLAUDE.md). Next: Milestone 5, runner + storage + regression (+ the approved witus-inbox
+alert). A consolidated help/docs/video-tutorial pass is planned for the end of the build
+(`plans/03-help-docs-and-video-tutorial.md`).
 
 ## Development
 

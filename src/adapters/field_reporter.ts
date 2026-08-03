@@ -14,7 +14,7 @@ import { join } from "node:path";
 import type { AdapterOutput, AgentAdapter, Provider } from "./base.js";
 import type { GraphInvoker } from "./subprocess.js";
 import { runGraphInSubprocess } from "./subprocess.js";
-import { AGENT_PROVIDER, makeRunName, resolveRepo, traceRef } from "./shared.js";
+import { AGENT_PROVIDER, makeRunName, resolveRepo, traceRef, VENDOR_NODE_PATH } from "./shared.js";
 import type { Settings } from "../settings.js";
 
 /** The slices of the agent's final state the harness reads (see its state.ts). */
@@ -84,10 +84,14 @@ export function createFieldReporterAdapter(
           llmProvider: AGENT_PROVIDER[provider],
         },
         runName,
-        // The agent reads the Gemini key under its own name.
-        extraEnv: settings.GOOGLE_API_KEY
-          ? { GEMINI_API_KEY: settings.GEMINI_API_KEY ?? settings.GOOGLE_API_KEY }
-          : {},
+        extraEnv: {
+          // 'server-only' stub — the package only exists inside a Next build.
+          NODE_PATH: VENDOR_NODE_PATH,
+          // The agent reads the Gemini key under its own name.
+          ...(settings.GOOGLE_API_KEY
+            ? { GEMINI_API_KEY: settings.GEMINI_API_KEY ?? settings.GOOGLE_API_KEY }
+            : {}),
+        },
         extraNodeOptions: "--conditions=react-server",
         timeoutMs: settings.EVAL_AGENT_TIMEOUT_MS,
       });

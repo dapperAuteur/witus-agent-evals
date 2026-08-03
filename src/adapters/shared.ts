@@ -8,6 +8,18 @@ import type { Provider } from "./base.js";
 
 const HARNESS_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
+/**
+ * NODE_PATH value exposing the harness's vendor stubs (currently just
+ * `server-only`, which only exists inside a Next.js build) to agent
+ * subprocesses. The agent's own node_modules always win over NODE_PATH.
+ */
+export const VENDOR_NODE_PATH = [
+  resolve(HARNESS_ROOT, "vendor"),
+  process.env.NODE_PATH,
+]
+  .filter(Boolean)
+  .join(":");
+
 /** Harness provider names → the agents' LlmProvider names. */
 export const AGENT_PROVIDER: Record<Provider, "anthropic" | "google"> = {
   claude: "anthropic",

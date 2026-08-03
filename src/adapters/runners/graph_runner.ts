@@ -10,9 +10,17 @@
  *   { modulePath, exportName, isFactory, invokeInput, runName, outFile }
  * The result is WRITTEN TO outFile (never stdout — agent code logs freely):
  *   { ok: true,  latency_ms, state } | { ok: false, latency_ms, error }
+ *
+ * The AGENT repo's own .env.local/.env are loaded from cwd first (its DB
+ * URLs, vendor keys); values the harness already injected win, since dotenv
+ * never overrides existing vars. dotenv resolves from the harness's
+ * node_modules (this file lives there) — the agent repo needs nothing extra.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { config } from "dotenv";
+
+config({ path: [".env.local", ".env"], quiet: true });
 
 interface RunnerSpec {
   modulePath: string;

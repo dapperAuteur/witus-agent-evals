@@ -1,0 +1,6 @@
+{
+  "name": "server-only",
+  "version": "0.0.0",
+  "description": "Harness stub. The field-reporter's modules import 'server-only', which Next.js aliases to a vendored no-op at build time; outside Next the specifier resolves to nothing. The adapter subprocess exposes this stub via NODE_PATH so the graph loads in plain Node. If the agent repo ever installs the real package, its local copy wins over NODE_PATH.",
+  "main": "index.js"
+}
