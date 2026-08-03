@@ -87,6 +87,13 @@ export function createFieldReporterAdapter(
         extraEnv: {
           // 'server-only' stub — the package only exists inside a Next build.
           NODE_PATH: VENDOR_NODE_PATH,
+          // Pin the provider under test and DISABLE the fallback chain: the
+          // agent's own with-fallback.ts says comparison runs must leave it
+          // unset ("pinned-to-one-provider experience the rubric scores can
+          // trust") — and its withFallbacks() wrapper breaks the nodes'
+          // withStructuredOutput calls (bug filed in that repo, plans/bugs).
+          FIELD_REPORTER_LLM_PROVIDER: AGENT_PROVIDER[provider],
+          FIELD_REPORTER_FALLBACK_PROVIDERS: "",
           // The agent reads the Gemini key under its own name.
           ...(settings.GOOGLE_API_KEY
             ? { GEMINI_API_KEY: settings.GEMINI_API_KEY ?? settings.GOOGLE_API_KEY }
