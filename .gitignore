@@ -23,6 +23,7 @@ dist/
 # Node/TypeScript (if the harness lands on TS)
 node_modules/
 *.tsbuildinfo
+coverage/
 
 # OS/editor
 .DS_Store
