@@ -26,10 +26,14 @@ case→checks→judge→CaseResult→RunSummary flow, error cases never kill a r
 storage under `runs/<run_id>/` with a cross-run agent-output cache keyed by case-input
 hash (re-judging never re-runs an agent), baseline regression detection
 (`src/regression.ts`), and the approved witus-inbox regression alert (`src/inbox/` —
-env-gated, fire-and-forget, inert until the slug is provisioned). Stack: **TypeScript** —
-zod + Vitest + strict tsc + pnpm (see CLAUDE.md). Next: Milestone 6, the curated
-datasets. A consolidated help/docs/video-tutorial pass is planned for the end of the
-build (`plans/03-help-docs-and-video-tutorial.md`).
+env-gated, fire-and-forget, inert until the slug is provisioned). **Milestone 6** adds
+the curated datasets (`datasets/`): 21 cases per agent — 8 easy / 7 known-hard / 6
+adversarial, each hard case naming its target assertion — with source-material fixtures,
+shared assertion packs, and a coach namespace map generated from that repo's real KB
+(see `datasets/README.md`). Stack: **TypeScript** — zod + Vitest + strict tsc + pnpm
+(see CLAUDE.md). Next: Milestone 7, CLI + report + provider comparison. A consolidated
+help/docs/video-tutorial pass is planned for the end of the build
+(`plans/03-help-docs-and-video-tutorial.md`).
 
 ## Development
 
