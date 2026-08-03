@@ -1,0 +1,19 @@
+{
+  "run_id": "20260803T183349-coach_multiagent-claude",
+  "agent": "coach_multiagent",
+  "provider": "claude",
+  "started_at": "2026-08-03T18:33:49.662Z",
+  "finished_at": "2026-08-03T18:56:58.396Z",
+  "n_cases": 21,
+  "pass_rate": 0.09523809523809523,
+  "per_assertion_pass_rate": {
+    "cx.routing_correct": 1,
+    "cx.citations_scoped": 1,
+    "cx.no_uncited_claims": 0.19047619047619047,
+    "cx.no_contradiction": 0.47619047619047616,
+    "cx.synthesis_faithful": 0.3333333333333333,
+    "cx.scope_safety": 0.47619047619047616
+  },
+  "baseline_run_id": null,
+  "regressions": []
+}

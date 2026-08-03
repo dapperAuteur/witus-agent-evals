@@ -1,0 +1,49 @@
+[
+  {
+    "id": "fr.output_valid",
+    "kind": "deterministic",
+    "description": "Draft has all required sections: title, body, sources.",
+    "check": "valid_schema",
+    "params": { "required": ["title", "body", "sources"] }
+  },
+  {
+    "id": "fr.budget_ok",
+    "kind": "deterministic",
+    "description": "Web searches stay within the agent's MAX_WEB_SEARCHES_PER_RUN (5).",
+    "check": "within_budget",
+    "params": { "max_tool_calls": 5 }
+  },
+  {
+    "id": "fr.revisions_ok",
+    "kind": "deterministic",
+    "description": "Revisions stay within the agent's MAX_REVISIONS (3).",
+    "check": "revisions_ok",
+    "params": { "max_revisions": 3 }
+  },
+  {
+    "id": "fr.citations_present",
+    "kind": "deterministic",
+    "description": "At least 3 distinct named sources, mirroring the agent's has_three_citations criterion.",
+    "check": "citation_present",
+    "params": { "min": 3 }
+  },
+  {
+    "id": "fr.no_pii",
+    "kind": "deterministic",
+    "description": "No emails, phone numbers, or SSNs leak into the published lesson.",
+    "check": "no_pii",
+    "params": {}
+  },
+  {
+    "id": "fr.grounded",
+    "kind": "model_graded",
+    "description": "Every factual claim is supported by the provided source material.",
+    "criterion": "grounded"
+  },
+  {
+    "id": "fr.independent_rubric_pass",
+    "kind": "model_graded",
+    "description": "Final draft passes the agent's own rubric under an independent judge.",
+    "criterion": "independent_rubric_pass"
+  }
+]

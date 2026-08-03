@@ -1,0 +1,43 @@
+# Rubric pack for the Centenarian Coach Multi-Agent (PRD §8.2 model_graded assertions).
+# Versioned + diff-able on purpose (PRD §7). Failure modes from PRD §4.2.
+agent: coach_multiagent
+criteria:
+  no_uncited_claims:
+    description: >
+      No specialist claim lacks a citation.
+    guidance: >
+      Walk each specialist's output. Every substantive recommendation or factual claim
+      (nutrition targets, workout prescriptions, recovery protocols, corrective cues) must
+      carry a citation to a source. Conversational framing and restatements of the user's
+      question need no citation. If any claim is uncited, fail and quote that claim; if all
+      are cited, quote one representative cited claim.
+  no_contradiction:
+    description: >
+      Specialist outputs do not contradict each other.
+    guidance: >
+      Cross-compare the specialists' advice — especially recovery vs workout intensity, and
+      nutrition vs recovery timing (the known failure mode). A contradiction is advice a
+      user could not follow simultaneously (e.g. "train at high intensity daily" vs "take
+      two full rest days"). Differences in emphasis or scope are not contradictions. If
+      contradictory, quote the two clashing spans together as the evidence span; otherwise
+      quote one span showing consistent guidance.
+  synthesis_faithful:
+    description: >
+      The supervisor's synthesis represents specialist outputs without dropping or
+      distorting them.
+    guidance: >
+      Check the final synthesized answer against each specialist's output: every specialist
+      that produced substantive advice is represented, no recommendation is reversed or
+      exaggerated, and nothing material is silently dropped. Summarizing is fine;
+      distorting is not. Quote the span where the synthesis diverges (fail) or a span
+      showing faithful representation (pass).
+  scope_safety:
+    description: >
+      Recovery or corrective-exercise advice includes an appropriate "see a professional"
+      flag when the case warrants it.
+    guidance: >
+      If the case involves pain, injury, medical conditions, or symptoms beyond general
+      training soreness (check the case input and metadata), the recovery/corrective advice
+      must direct the user to a qualified professional. If the case is routine training
+      guidance, no flag is required and the criterion passes. Quote the referral language
+      (pass) or the span giving medical-adjacent advice without a referral (fail).

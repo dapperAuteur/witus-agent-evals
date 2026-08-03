@@ -1,0 +1,34 @@
+# Rubric pack for the Wanderlearn Field Reporter (PRD §8.1 model_graded assertions).
+# Versioned + diff-able on purpose (PRD §7).
+#
+# independent_rubric_pass mirrors the agent's OWN critique rubric so the harness can
+# catch self-grading leniency. Source of truth read 2026-07-31:
+#   wanderlearn-field-reporter/src/agent/rubric.ts (v1 rubric)
+# If that file changes, this guidance must be re-synced — that is a feature, not a bug:
+# the diff shows exactly when the agent's bar moved.
+agent: field_reporter
+criteria:
+  grounded:
+    description: >
+      Every factual claim in the draft is supported by the provided source material.
+    guidance: >
+      Compare each factual claim in the draft (dates, names, places, numbers, historical or
+      scientific statements) against the case's source material. General connective prose and
+      learning-exercise instructions are not factual claims. If ANY claim is not traceable to
+      the source material, the criterion fails; quote the offending claim as your evidence
+      span. If all claims trace, quote one representative supported claim.
+  independent_rubric_pass:
+    description: >
+      The final draft passes the same rubric the agent critiques itself against, judged
+      independently.
+    guidance: >
+      Score the draft against the agent's v1 rubric. Blocking criteria (ALL must pass):
+      (1) 3 to 5 learning objectives listed at the top of the lesson;
+      (2) each section references at least one numbered learning objective;
+      (3) at least 3 distinct, named sources cited in the body;
+      (4) at least one hands-on exercise the learner does on their own;
+      (5) reading level appropriate for the case's targetAudience field.
+      Non-blocking nudge (note it, but it cannot fail the draft alone): ends with a
+      "what to capture next time" section. Pass only if all five blocking criteria pass;
+      quote the span that decides the outcome (the missing element's closest miss, or a
+      representative satisfied element).

@@ -1,0 +1,32 @@
+{
+  "name": "witus-agent-evals",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agent-agnostic eval harness for WitUS LangGraph agents: property-based cases, deterministic checks + LLM-as-judge, regression detection, provider comparison.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:cov": "vitest run --coverage",
+    "test:smoke": "RUN_SMOKE=1 vitest run tests/smoke/adapters.smoke.test.ts",
+    "evals": "tsx cli.ts"
+  },
+  "dependencies": {
+    "@langchain/anthropic": "^1.4.0",
+    "@langchain/core": "^1.1.47",
+    "@langchain/google-genai": "^2.1.31",
+    "@langchain/mistralai": "^1.1.0",
+    "@langchain/ollama": "^1.2.7",
+    "@langchain/openai": "^1.4.7",
+    "dotenv": "^17.2.1",
+    "yaml": "^2.8.0",
+    "zod": "^4.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
