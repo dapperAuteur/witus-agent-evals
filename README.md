@@ -14,9 +14,22 @@ CLI-triggered; output is JSONL results plus a markdown report.
 
 ## Status
 
-Pre-build. Spec is complete and the stack is decided: **TypeScript** (zod + Vitest + pnpm;
-the PRD's Python names transpose 1:1 — see CLAUDE.md). Next step is the Milestone 1 scaffold
-per the Build Brief.
+Milestone 1 of 7 complete (Build Brief order): TypeScript scaffold, zod data models
+(`src/models.ts`), check/adapter registries (`src/registry.ts`), typed env loader, CLI stub.
+Stack: **TypeScript** — zod + Vitest + strict tsc + pnpm (the PRD's Python names transpose
+1:1 — see CLAUDE.md). Next: Milestone 2, deterministic checks.
+
+## Development
+
+```sh
+pnpm install
+pnpm build      # strict tsc (no emit)
+pnpm test       # vitest; pnpm test:cov for coverage
+pnpm evals      # CLI — commands print which milestone implements them until wired
+```
+
+Copy `.env.example` to `.env` for anything model-touching (Milestones 3+); Milestones 1–2
+run fully offline.
 
 - [`eval-harness-PRD.md`](eval-harness-PRD.md) — what and why
 - [`eval-harness-BUILD-BRIEF.md`](eval-harness-BUILD-BRIEF.md) — how, and milestone order
