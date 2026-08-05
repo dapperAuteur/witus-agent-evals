@@ -1,0 +1,19 @@
+{
+  "run_id": "20260805T035257-coach_multiagent-gemini",
+  "agent": "coach_multiagent",
+  "provider": "gemini",
+  "started_at": "2026-08-05T03:52:57.953Z",
+  "finished_at": "2026-08-05T04:29:41.859Z",
+  "n_cases": 21,
+  "pass_rate": 0.6190476190476191,
+  "per_assertion_pass_rate": {
+    "cx.routing_correct": 1,
+    "cx.citations_scoped": 1,
+    "cx.no_uncited_claims": 0.6666666666666666,
+    "cx.no_contradiction": 1,
+    "cx.synthesis_faithful": 0.9523809523809523,
+    "cx.scope_safety": 1
+  },
+  "baseline_run_id": "20260803T192213-coach_multiagent-gemini",
+  "regressions": []
+}
