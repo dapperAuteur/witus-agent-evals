@@ -1,7 +1,7 @@
 # Datasets
 
 One pack per agent (PRD §8.3): `cases.jsonl` (one `EvalCase` per line) plus fixtures.
-21 cases each — 8 easy / 7 known-hard / 6 adversarial. Every hard and adversarial case
+21 cases each: 8 easy / 7 known-hard / 6 adversarial. Every hard and adversarial case
 names the assertion it is trying to break in `metadata.targets` (self-documenting) and
 its band in `metadata.difficulty`. Fixtures only; no real user data.
 
@@ -15,13 +15,13 @@ inlines as text. Used for:
 - long transcripts → `field_reporter/source_material/*.md`
 - `metadata.namespaces` → `coach_multiagent/kb_fixtures/namespaces.json`
 
-## Coach namespace scoping — two layers
+## Coach namespace scoping: two layers
 
 `cx.citations_scoped` accepts a citation when its source label matches either layer:
 
-1. **Exact** — `kb_fixtures/namespaces.json`, the raw academic citation strings from the
+1. **Exact**: `kb_fixtures/namespaces.json`, the raw academic citation strings from the
    coach repo's `kb-fixtures/*_kb.json` (regen below).
-2. **Prefix** — `kb_fixtures/namespace_prefixes.json`. The coach's LIVE pgvector KB also
+2. **Prefix**: `kb_fixtures/namespace_prefixes.json`. The coach's LIVE pgvector KB also
    holds formatted corpora labeled `<Family> · <title> · p. N`; verified against the live
    DB on 2026-08-03: nutrition = `NASM CNC`, workout = `NASM CPT` + `Training`,
    recovery = `Recovery`, corrective = `NASM CES`. Re-verify with
@@ -47,8 +47,8 @@ json.dump(out, open('datasets/coach_multiagent/kb_fixtures/namespaces.json','w')
 
 ## Authoritative budget values
 
-- `fr.budget_ok` `max_tool_calls: 5` — `MAX_WEB_SEARCHES_PER_RUN` in the field-reporter repo
-- `fr.revisions_ok` `max_revisions: 3` — `MAX_REVISIONS` in its graph
-- `fr.citations_present` `min: 3` — its own `has_three_citations` rubric criterion
+- `fr.budget_ok` `max_tool_calls: 5` mirrors `MAX_WEB_SEARCHES_PER_RUN` in the field-reporter repo
+- `fr.revisions_ok` `max_revisions: 3` mirrors `MAX_REVISIONS` in its graph
+- `fr.citations_present` `min: 3` mirrors its own `has_three_citations` rubric criterion
 
 Re-check those constants in the agent repos when bumping this dataset.
