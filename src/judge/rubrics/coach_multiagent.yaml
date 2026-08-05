@@ -3,14 +3,25 @@
 agent: coach_multiagent
 criteria:
   no_uncited_claims:
+    # RUBRIC v2 (2026-08-05): the coach now emits inline [n] markers keyed to its
+    # attached citation list (BAM decision after the 66.7% claim-traceability
+    # finding, run 20260805T035257). Pass rates under v2 are NOT comparable to
+    # v1-judged runs (through 20260805T035257) — re-baseline on the first v2 run.
+    # Keep in sync: coach repo src/agents/shared-rules.ts CITE_OR_DROP_RULE and
+    # evals/citation-coverage.ts (online evaluator).
     description: >
-      No specialist claim lacks a citation.
+      Every substantive specialist claim carries an inline [n] marker that maps to an
+      apt source in the attached citation list.
     guidance: >
       Walk each specialist's output. Every substantive recommendation or factual claim
       (nutrition targets, workout prescriptions, recovery protocols, corrective cues) must
-      carry a citation to a source. Conversational framing and restatements of the user's
-      question need no citation. If any claim is uncited, fail and quote that claim; if all
-      are cited, quote one representative cited claim.
+      carry at least one inline marker like [2] whose number exists in that specialist's
+      citation list AND whose source actually supports the claim. Fail on: a substantive
+      claim with no marker; a marker pointing at a source that does not support the claim;
+      a marker number with no corresponding source. Conversational framing, restatements
+      of the user's question, and see-a-professional safety referrals need no marker.
+      If failing, quote the offending claim; if passing, quote one representative marked
+      claim and name its source.
   no_contradiction:
     description: >
       Specialist outputs do not contradict each other.
