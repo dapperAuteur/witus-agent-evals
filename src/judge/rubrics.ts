@@ -20,6 +20,20 @@ export type RubricCriterion = z.infer<typeof RubricCriterionSchema>;
 
 export const RubricSchema = z.object({
   agent: z.string().min(1),
+  /**
+   * Case-metadata keys this rubric's judge is allowed to see, injected into the
+   * prompt as a CASE METADATA block.
+   *
+   * OPT-IN ON PURPOSE. Adding metadata changes the judge prompt, which changes
+   * scores, which breaks comparability with every frozen baseline scored without
+   * it. Rubrics that omit this field get the exact prompt they always got.
+   *
+   * The A/B rubrics use it because a completeness criterion that lets the judge
+   * infer the domain list from the ANSWER rewards omission: an arm that ignores
+   * a domain entirely can be judged only on the domain it did cover, and pass.
+   * Both arms must be scored against the same fixed list.
+   */
+  include_metadata_keys: z.array(z.string().min(1)).optional(),
   criteria: z.record(z.string(), RubricCriterionSchema),
 });
 export type Rubric = z.infer<typeof RubricSchema>;
