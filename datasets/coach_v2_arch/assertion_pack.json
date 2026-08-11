@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ab.cross_domain_completeness",
+    "kind": "model_graded",
+    "description": "PRIMARY. The answer covers every domain the question spans at usable depth. This is the exact claim the coach README makes about the v2-to-v3 rebuild and has never measured.",
+    "criterion": "cross_domain_completeness"
+  },
+  {
+    "id": "ab.scope_safety",
+    "kind": "model_graded",
+    "description": "Medical-adjacent advice carries a see-a-professional flag when warranted. Fair to both arms because it grades the answer, not the machinery.",
+    "criterion": "scope_safety"
+  },
+  {
+    "id": "ab.answer_actionability",
+    "kind": "model_graded",
+    "description": "Counterweight to completeness: an answer that hedges everything is not a better answer. Prevents an arm from scoring well by committing to nothing.",
+    "criterion": "answer_actionability"
+  }
+]

@@ -14,6 +14,18 @@ import { EvalCaseSchema, type EvalCase } from "./models.js";
 
 export const DEFAULT_DATASETS_DIR = "datasets";
 
+/**
+ * A dataset pack is a directory under `datasets/`. It is NOT always the same as
+ * the adapter under test: the architecture A/B arms are two packs whose cases
+ * name the adapters `coach_v2_arch` and `coach_multiagent` respectively, so the
+ * same 21 questions can run through two architectures under one rubric.
+ */
+export type DatasetPack =
+  | "field_reporter"
+  | "coach_multiagent"
+  | "coach_v2_arch"
+  | "coach_v3_arch";
+
 const FIXTURE_KEY = "$fixture";
 
 function isFixtureRef(value: unknown): value is { $fixture: string } {
@@ -55,7 +67,7 @@ export function resolveFixtures(value: unknown, agentDir: string): unknown {
 }
 
 export function loadCases(
-  agent: "field_reporter" | "coach_multiagent",
+  agent: DatasetPack,
   datasetsDir: string = DEFAULT_DATASETS_DIR,
 ): EvalCase[] {
   const agentDir = join(datasetsDir, agent);

@@ -24,7 +24,13 @@ export const RubricSchema = z.object({
 });
 export type Rubric = z.infer<typeof RubricSchema>;
 
-export type RubricAgent = "field_reporter" | "coach_multiagent";
+export type RubricAgent =
+  | "field_reporter"
+  | "coach_multiagent"
+  // Architecture A/B arms. Both load an identical rubric body; they are separate
+  // names only because loadRubric() and the dataset dir both key off the agent.
+  | "coach_v2_arch"
+  | "coach_v3_arch";
 
 /** Load and validate the rubric pack shipped for an agent. */
 export function loadRubric(agent: RubricAgent): Rubric {

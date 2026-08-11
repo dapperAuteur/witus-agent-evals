@@ -35,7 +35,10 @@ export type Assertion = z.infer<typeof AssertionSchema>;
 /** A single test case: an input plus the properties its output must have. */
 export const EvalCaseSchema = z.object({
   id: z.string(),
-  agent: z.enum(["field_reporter", "coach_multiagent"]),
+  // Adapter registry key. "coach_v2_arch" is the architecture A/B arm that
+  // reproduces the v2 coach shape (one call, no retrieval); it is an adapter,
+  // not a shipped product. See datasets/coach_arch_ab/README.md.
+  agent: z.enum(["field_reporter", "coach_multiagent", "coach_v2_arch"]),
   input: JsonRecord,
   metadata: JsonRecord.default({}),
   assertions: z.array(AssertionSchema),
