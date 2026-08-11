@@ -12,6 +12,8 @@ const summary: RunSummary = {
   finished_at: new Date("2026-07-31T12:05:00Z"),
   n_cases: 20,
   pass_rate: 0.8,
+  errored_cases: 0,
+  pass_rate_excluding_errors: null,
   per_assertion_pass_rate: { "fr.grounded": 0.8 },
   baseline_run_id: "r-0",
   regressions: ["fr.grounded"],

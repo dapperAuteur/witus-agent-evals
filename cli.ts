@@ -40,7 +40,14 @@ Notes:
   re-running agents. Exit code 2 signals regressions.
 `;
 
-const AGENTS: RubricAgent[] = ["field_reporter", "coach_multiagent"];
+const AGENTS: RubricAgent[] = [
+  "field_reporter",
+  "coach_multiagent",
+  // Architecture A/B: run both with the SAME --provider. A split run
+  // (one arm claude, one arm gemini) moves two variables and is unpublishable.
+  "coach_v2_arch",
+  "coach_v3_arch",
+];
 
 function parseFlags(argv: string[]): Record<string, string> {
   const flags: Record<string, string> = {};

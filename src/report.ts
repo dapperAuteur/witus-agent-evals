@@ -27,11 +27,35 @@ export function makeReport(summary: RunSummary, results: CaseResult[]): string {
     `| Provider | ${summary.provider} |`,
     `| Cases | ${summary.n_cases} |`,
     `| **Pass rate** | **${pct(summary.pass_rate)}** |`,
+    ...(summary.errored_cases > 0
+      ? [
+          `| **Errored cases** | **${summary.errored_cases} of ${summary.n_cases}** |`,
+          `| Pass rate excluding errors | ${
+            summary.pass_rate_excluding_errors === null
+              ? "n/a (every case errored)"
+              : pct(summary.pass_rate_excluding_errors)
+          } |`,
+        ]
+      : []),
     `| Started | ${summary.started_at.toISOString()} |`,
     `| Finished | ${summary.finished_at.toISOString()} |`,
     `| Baseline | ${summary.baseline_run_id ?? "—"} |`,
     ``,
   ];
+
+  // An errored run is not a result. Say so above the numbers, not in a footnote,
+  // because the pass-rate cell alone reads as evidence about the agent.
+  if (summary.errored_cases > 0) {
+    lines.push(
+      `> **This run is not usable as a measurement.** ${summary.errored_cases} of ` +
+        `${summary.n_cases} cases failed before or during judging (network, quota, or ` +
+        `a crashed agent), and an errored case is recorded as a failed one. Do not ` +
+        `publish the pass rate above, do not freeze this as a baseline, and do not ` +
+        `compare it to anything. Fix the cause and re-run; cached agent outputs mean ` +
+        `a re-run only pays for the cases that did not complete.`,
+      ``,
+    );
+  }
 
   if (summary.baseline_run_id) {
     lines.push(`## Regressions vs ${summary.baseline_run_id}`, ``);

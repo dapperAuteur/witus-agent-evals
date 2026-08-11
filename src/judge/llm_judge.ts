@@ -53,6 +53,28 @@ function extractJson(text: string): string {
   return text.slice(start, end + 1);
 }
 
+/**
+ * Render the rubric's whitelisted case-metadata keys, or nothing at all.
+ *
+ * Returns an empty array when a rubric declares no keys, so rubrics written
+ * before this existed produce a byte-identical prompt and their baselines stay
+ * comparable.
+ */
+function metadataBlock(rubric: Rubric, evalCase: EvalCase): string[] {
+  const keys = rubric.include_metadata_keys;
+  if (!keys || keys.length === 0) return [];
+  const picked: Record<string, unknown> = {};
+  for (const key of keys) {
+    if (key in evalCase.metadata) picked[key] = evalCase.metadata[key];
+  }
+  if (Object.keys(picked).length === 0) return [];
+  return [
+    `CASE METADATA (ground truth from the dataset, not from the agent):`,
+    JSON.stringify(picked, null, 2),
+    ``,
+  ];
+}
+
 export function buildJudgePrompt(args: {
   criterionKey: string;
   rubric: Rubric;
@@ -70,6 +92,7 @@ export function buildJudgePrompt(args: {
     `CASE INPUT (what the agent was asked to do):`,
     JSON.stringify(args.evalCase.input, null, 2),
     ``,
+    ...metadataBlock(args.rubric, args.evalCase),
     `AGENT OUTPUT (the thing you are judging):`,
     args.outputText,
     ``,
