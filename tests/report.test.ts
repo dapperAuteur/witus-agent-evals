@@ -11,6 +11,8 @@ function summary(overrides: Partial<RunSummary>): RunSummary {
     finished_at: new Date("2026-07-31T12:20:00Z"),
     n_cases: 2,
     pass_rate: 0.5,
+    errored_cases: 0,
+    pass_rate_excluding_errors: null,
     per_assertion_pass_rate: { "fr.grounded": 0.5, "fr.citations_present": 1 },
     baseline_run_id: null,
     regressions: [],
@@ -93,6 +95,8 @@ describe("makeComparison", () => {
       run_id: "r-gemini",
       provider: "gemini",
       pass_rate: 1,
+      errored_cases: 0,
+      pass_rate_excluding_errors: null,
       per_assertion_pass_rate: { "fr.grounded": 1, "fr.citations_present": 1 },
     }),
     results: [
@@ -123,5 +127,33 @@ describe("makeComparison", () => {
       results: claude.results.map((r) => ({ ...r, provider: "gemini" as const })),
     });
     expect(same).toContain("None — both providers pass and fail the same cases.");
+  });
+});
+
+describe("errored runs are not presented as results", () => {
+  // Regression guard for a real incident: a network drop mid-run left 20 of 21
+  // cases unable to reach the model, and the report printed "0.0% pass rate"
+  // with nothing to indicate the number was meaningless.
+  it("shouts, and shows the honest denominator, when cases errored", () => {
+    const md = makeReport(
+      summary({ n_cases: 21, pass_rate: 0, errored_cases: 20, pass_rate_excluding_errors: 0 }),
+      [],
+    );
+    expect(md).toContain("not usable as a measurement");
+    expect(md).toContain("20 of 21");
+  });
+
+  it("reports n/a rather than 0 when every case errored", () => {
+    const md = makeReport(
+      summary({ n_cases: 5, pass_rate: 0, errored_cases: 5, pass_rate_excluding_errors: null }),
+      [],
+    );
+    expect(md).toContain("n/a (every case errored)");
+  });
+
+  it("stays quiet when nothing errored", () => {
+    const md = makeReport(summary({ errored_cases: 0 }), []);
+    expect(md).not.toContain("not usable as a measurement");
+    expect(md).not.toContain("Errored cases");
   });
 });

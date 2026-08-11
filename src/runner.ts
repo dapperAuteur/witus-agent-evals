@@ -286,6 +286,12 @@ export async function runEval(options: RunOptions): Promise<RunOutcome> {
       results.length === 0
         ? 0
         : results.filter((r) => r.passed).length / results.length,
+    errored_cases: erroredCases,
+    pass_rate_excluding_errors:
+      results.length - erroredCases === 0
+        ? null
+        : results.filter((r) => r.passed).length /
+          (results.length - erroredCases),
     per_assertion_pass_rate: perAssertionRates,
     baseline_run_id: options.baselineRunId ?? null,
     regressions,
