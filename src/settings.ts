@@ -28,6 +28,23 @@ const SettingsSchema = z.object({
   // Judge selection (PRD §7); defaults live in providers.ts
   JUDGE_PROVIDER: z.enum(JUDGE_PROVIDERS).optional(),
   JUDGE_MODEL: z.string().min(1).optional(),
+  /**
+   * How many times each model_graded assertion is judged; the verdict is the
+   * majority of the judgments.
+   *
+   * Default 1: one judgment, the historical code path, byte-identical
+   * artifacts. Every frozen baseline was scored that way, so raising this
+   * default would silently re-score history.
+   *
+   * Set an ODD number (3 or 5) when you need a stable measurement. A judge
+   * self-agreement probe on 2026-08-12 re-judged one criterion three times on
+   * unchanged inputs and got pass rates of 55.0 / 65.0 / 70.0 percent from the
+   * free judge and 45.0 / 35.0 / 40.0 percent from claude-opus-5. A single
+   * judgment cannot carry a finding that size. An EVEN number can tie, and a
+   * tie is recorded as a failure (see judgeAssertionRepeated), because a split
+   * judge is not evidence of passing.
+   */
+  JUDGE_REPEATS: z.coerce.number().int().positive().default(1),
   // Agent repo checkouts (defaults: the sibling layout on BAM's machine)
   FIELD_REPORTER_REPO: z.string().min(1).optional(),
   COACH_REPO: z.string().min(1).optional(),

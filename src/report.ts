@@ -17,7 +17,30 @@ function avg(values: number[]): number {
   return values.length === 0 ? 0 : values.reduce((a, b) => a + b, 0) / values.length;
 }
 
+/**
+ * Below this, a repeated-judgment run is reported as unusable rather than as a
+ * result. With 3 repeats a clean run cannot score under 66.7 percent (a
+ * majority is 2 of 3), so 85 percent sits between "the judge mostly agreed
+ * with itself" and "the verdicts were close to coin flips". A run that lands
+ * here has a pass rate that would move if it were re-judged, which is exactly
+ * the failure the 2026-08-12 stability probe measured.
+ */
+export const LOW_JUDGE_AGREEMENT = 0.85;
+
 export function makeReport(summary: RunSummary, results: CaseResult[]): string {
+  // Repeated judging is off by default, and a report of a default run must stay
+  // byte-identical to the ones already published, so every line below is gated
+  // on repeats > 1 rather than on the fields merely being present.
+  const repeats = summary.judge_repeats ?? 1;
+  const repeated = repeats > 1;
+  const agreement = summary.judge_agreement_rate ?? null;
+  const tiedAssertions = repeated
+    ? results.reduce(
+        (n, r) => n + r.assertion_results.filter((a) => a.judgment_tied).length,
+        0,
+      )
+    : 0;
+
   const lines: string[] = [
     `# Eval report — ${summary.run_id}`,
     ``,
@@ -37,6 +60,19 @@ export function makeReport(summary: RunSummary, results: CaseResult[]): string {
           } |`,
         ]
       : []),
+    ...(repeated
+      ? [
+          `| Judge repeats | ${repeats} per model-graded assertion, verdict by majority |`,
+          `| **Judge agreement** | **${
+            agreement === null
+              ? "n/a (no model-graded assertions)"
+              : pct(agreement)
+          }** |`,
+          ...(tiedAssertions > 0
+            ? [`| Tied judgments | ${tiedAssertions} (a tie is recorded as a failure) |`]
+            : []),
+        ]
+      : []),
     `| Started | ${summary.started_at.toISOString()} |`,
     `| Finished | ${summary.finished_at.toISOString()} |`,
     `| Baseline | ${summary.baseline_run_id ?? "—"} |`,
@@ -53,6 +89,23 @@ export function makeReport(summary: RunSummary, results: CaseResult[]): string {
         `publish the pass rate above, do not freeze this as a baseline, and do not ` +
         `compare it to anything. Fix the cause and re-run; cached agent outputs mean ` +
         `a re-run only pays for the cases that did not complete.`,
+      ``,
+    );
+  }
+
+  // A judge that disagrees with itself is not measuring the agent. Same
+  // treatment as an errored run: say it above the numbers, not in a footnote.
+  if (repeated && agreement !== null && agreement < LOW_JUDGE_AGREEMENT) {
+    lines.push(
+      `> **The judge did not agree with itself, so this run is not a measurement.** ` +
+        `Each model-graded assertion was judged ${repeats} times and only ${pct(agreement)} ` +
+        `of those judgments backed the recorded verdict` +
+        `${tiedAssertions > 0 ? `, with ${tiedAssertions} assertion(s) tied` : ""}. ` +
+        `A pass rate built on judgments that unstable would move on a re-run, ` +
+        `so do not publish it, do not freeze it as a baseline, and do not compare ` +
+        `it to another run. Fix the judge first: a stronger judge model, a sharper ` +
+        `criterion, or more repeats. Re-judging is cheap because cached agent ` +
+        `outputs mean no agent is re-run.`,
       ``,
     );
   }

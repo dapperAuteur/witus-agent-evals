@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -256,5 +256,116 @@ describe("runEval — the brief's full-run acceptance", () => {
       passThreshold: 0.6,
     });
     expect(lenient.results[0]!.passed).toBe(true); // 1/1.5 ≈ 0.67 ≥ 0.6
+  });
+});
+
+describe("runEval with JUDGE_REPEATS", () => {
+  /** Replays scripted judge replies across the run. */
+  function scriptedJudge(replies: string[]): JudgeModel & { calls: number } {
+    const model = {
+      provider: "cerebras" as const,
+      modelId: "fake",
+      calls: 0,
+      async invoke(): Promise<string> {
+        const reply = replies[model.calls];
+        model.calls += 1;
+        if (reply === undefined) throw new Error("judge script exhausted");
+        return reply;
+      },
+    };
+    return model;
+  }
+
+  const verdict = (passed: boolean) =>
+    JSON.stringify({
+      score: passed ? 1 : 0.2,
+      passed,
+      rationale: passed ? "grounded" : "not grounded",
+      evidence_span: passed ? "The Eiffel Tower opened in 1889." : "",
+    });
+
+  // The load-bearing test: default settings must write the same artifacts they
+  // always have, because frozen baselines are compared byte-for-byte against them.
+  it("defaults to one judgment and writes the historical artifacts unchanged", async () => {
+    const judge = scriptedJudge([verdict(true)]);
+    const outcome = await runEval({ ...baseOptions(), judgeModel: judge });
+
+    expect(judge.calls).toBe(1); // one model_graded assertion, one judgment
+    expect(outcome.summary.judge_repeats).toBeUndefined();
+    expect(outcome.summary.judge_agreement_rate).toBeUndefined();
+
+    const summaryJson = readFileSync(join(runsDir, outcome.runId, "summary.json"), "utf8");
+    expect(Object.keys(JSON.parse(summaryJson))).toEqual([
+      "run_id",
+      "agent",
+      "provider",
+      "started_at",
+      "finished_at",
+      "n_cases",
+      "pass_rate",
+      "errored_cases",
+      "pass_rate_excluding_errors",
+      "per_assertion_pass_rate",
+      "baseline_run_id",
+      "regressions",
+    ]);
+    const resultsJsonl = readFileSync(join(runsDir, outcome.runId, "results.jsonl"), "utf8");
+    expect(resultsJsonl).not.toContain("judgment");
+    expect(summaryJson).not.toContain("judge_");
+  });
+
+  it("an explicit JUDGE_REPEATS=1 in settings is the same default path", async () => {
+    const judge = scriptedJudge([verdict(true)]);
+    const outcome = await runEval({
+      ...baseOptions(),
+      settings: loadSettings({ JUDGE_REPEATS: "1" } as NodeJS.ProcessEnv),
+      judgeModel: judge,
+    });
+    expect(judge.calls).toBe(1);
+    expect(outcome.summary.judge_repeats).toBeUndefined();
+    expect(outcome.results[0]!.assertion_results[1]!.judgments).toBeUndefined();
+  });
+
+  it("judges three times, takes the majority, and publishes the agreement rate", async () => {
+    const judge = scriptedJudge([verdict(true), verdict(false), verdict(true)]);
+    const outcome = await runEval({
+      ...baseOptions(),
+      settings: loadSettings({ JUDGE_REPEATS: "3" } as NodeJS.ProcessEnv),
+      judgeModel: judge,
+    });
+
+    expect(judge.calls).toBe(3);
+    expect(outcome.summary.judge_repeats).toBe(3);
+    expect(outcome.summary.judge_agreement_rate).toBeCloseTo(2 / 3);
+
+    const graded = outcome.results[0]!.assertion_results.find(
+      (a) => a.assertion_id === "fr.grounded",
+    )!;
+    expect(graded.passed).toBe(true);
+    expect(graded.judgments).toBe(3);
+    expect(graded.judgments_agreeing).toBe(2);
+
+    // Deterministic checks carry no bookkeeping and must not dilute the rate.
+    const deterministic = outcome.results[0]!.assertion_results.find(
+      (a) => a.assertion_id === "fr.citations_present",
+    )!;
+    expect(deterministic.judgments).toBeUndefined();
+
+    // Round-trips from disk with the new fields intact.
+    expect(loadSummary(runsDir, outcome.runId).judge_agreement_rate).toBeCloseTo(2 / 3);
+    const reloaded = loadResults(runsDir, outcome.runId)[0]!.assertion_results.find(
+      (a) => a.assertion_id === "fr.grounded",
+    )!;
+    expect(reloaded.judgments_agreeing).toBe(2);
+  });
+
+  it("reports a null agreement rate when nothing was model-graded", async () => {
+    const outcome = await runEval({
+      ...baseOptions(),
+      cases: [cases[1]!], // fr-002: deterministic assertion only
+      settings: loadSettings({ JUDGE_REPEATS: "3" } as NodeJS.ProcessEnv),
+    });
+    expect(outcome.summary.judge_repeats).toBe(3);
+    expect(outcome.summary.judge_agreement_rate).toBeNull();
   });
 });

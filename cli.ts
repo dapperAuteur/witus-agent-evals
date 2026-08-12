@@ -36,6 +36,10 @@ Notes:
                default is the free cerebras judge, and the judge is never the
                provider under test.
   --threshold  weighted pass threshold per case (default 1.0 = all assertions).
+  JUDGE_REPEATS  env var: judgments per model-graded assertion, verdict by
+               majority (default 1). Set an odd number (3 or 5) before
+               publishing a pass rate; the report then carries a judge
+               agreement figure. See README "Repeated judging".
   Agent output is cached under runs/cache/ — re-running re-judges without
   re-running agents. Exit code 2 signals regressions.
 `;

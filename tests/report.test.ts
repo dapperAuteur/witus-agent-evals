@@ -157,3 +157,90 @@ describe("errored runs are not presented as results", () => {
     expect(md).not.toContain("Errored cases");
   });
 });
+
+describe("repeated judging in the report", () => {
+  const repeatedResult = result({
+    assertion_results: [
+      {
+        assertion_id: "fr.grounded",
+        passed: true,
+        score: 1,
+        rationale: "[majority 2 of 3 judgments] ok",
+        judgments: 3,
+        judgments_agreeing: 2,
+        judgments_errored: 0,
+      },
+    ],
+  });
+
+  // Frozen baselines and every published report were written at one judgment
+  // per assertion. A default run must produce the same bytes it always has.
+  it("is byte-identical at one judgment, fields present or not", () => {
+    const withoutFields = makeReport(summary({}), [result({}), failing]);
+    const withRepeatsOne = makeReport(
+      summary({ judge_repeats: 1, judge_agreement_rate: 1 }),
+      [result({}), failing],
+    );
+    expect(withRepeatsOne).toBe(withoutFields);
+    expect(withoutFields).not.toContain("Judge agreement");
+    expect(withoutFields).not.toContain("Judge repeats");
+  });
+
+  it("shows repeats and agreement once repeats > 1", () => {
+    const md = makeReport(
+      summary({ judge_repeats: 3, judge_agreement_rate: 1 }),
+      [repeatedResult],
+    );
+    expect(md).toContain("| Judge repeats | 3 per model-graded assertion, verdict by majority |");
+    expect(md).toContain("| **Judge agreement** | **100.0%** |");
+    expect(md).not.toContain("did not agree with itself");
+  });
+
+  it("shouts when agreement is low, the way an errored run does", () => {
+    const md = makeReport(
+      summary({ judge_repeats: 3, judge_agreement_rate: 0.5, pass_rate: 0.55 }),
+      [repeatedResult],
+    );
+    expect(md).toContain("| **Judge agreement** | **50.0%** |");
+    expect(md).toContain("The judge did not agree with itself, so this run is not a measurement.");
+    expect(md).toContain("do not freeze it as a baseline");
+    // The warning leads; it is not a footnote under the numbers.
+    expect(md.indexOf("did not agree with itself")).toBeLessThan(
+      md.indexOf("## Per-assertion pass rates"),
+    );
+  });
+
+  it("counts tied assertions and says a tie is a failure", () => {
+    const tied = result({
+      case_id: "fr-tied",
+      passed: false,
+      assertion_results: [
+        {
+          assertion_id: "fr.grounded",
+          passed: false,
+          score: 0.4,
+          rationale: "[tie 1-1 of 2 judgments, recorded as a failure] split",
+          judgments: 2,
+          judgments_agreeing: 1,
+          judgments_errored: 0,
+          judgment_tied: true,
+        },
+      ],
+    });
+    const md = makeReport(
+      summary({ judge_repeats: 2, judge_agreement_rate: 0.5 }),
+      [tied],
+    );
+    expect(md).toContain("| Tied judgments | 1 (a tie is recorded as a failure) |");
+    expect(md).toContain("1 assertion(s) tied");
+  });
+
+  it("says n/a rather than a number when no assertion was model-graded", () => {
+    const md = makeReport(
+      summary({ judge_repeats: 3, judge_agreement_rate: null }),
+      [result({})],
+    );
+    expect(md).toContain("n/a (no model-graded assertions)");
+    expect(md).not.toContain("did not agree with itself");
+  });
+});
