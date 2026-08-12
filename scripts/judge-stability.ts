@@ -24,7 +24,7 @@
  * prompt would measure the stability of a prompt nobody runs.
  *
  * ---------------------------------------------------------------------------
- * ON THE ANTI-SELF-GRADING GUARD — read this before assuming it was bypassed.
+ * ON THE ANTI-SELF-GRADING GUARD. Read this before assuming it was bypassed.
  * ---------------------------------------------------------------------------
  * `resolveJudgeProvider` in `src/providers.ts` refuses to let a provider grade
  * its own cases: with `JUDGE_PROVIDER=anthropic` and the provider under test
@@ -40,8 +40,8 @@
  * That is legitimate HERE, and only here, for one reason: this experiment does
  * not produce a score for any agent. It produces a variance figure for a judge.
  * Nothing it emits is a claim that one agent beat another, so the failure mode
- * the guard prevents — a vendor's model flattering its own agent in a published
- * comparison — has no purchase. The self-agreement number for the anthropic
+ * the guard prevents, a vendor's model flattering its own agent in a published
+ * comparison, has no purchase. The self-agreement number for the anthropic
  * judge would be identical if these outputs had come from a Gemini agent; the
  * measurement is of the judge's consistency with itself, not of the agent.
  *
@@ -188,7 +188,7 @@ function actionabilityAssertion(evalCase: EvalCase): Assertion {
   const assertion = evalCase.assertions.find((a) => a.id === ASSERTION_ID);
   if (!assertion) {
     throw new Error(
-      `Case "${evalCase.id}" has no assertion "${ASSERTION_ID}" — the dataset pack changed`,
+      `Case "${evalCase.id}" has no assertion "${ASSERTION_ID}": the dataset pack changed`,
     );
   }
   return assertion;
