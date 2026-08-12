@@ -105,6 +105,94 @@ export function buildJudgePrompt(args: {
   ].join("\n");
 }
 
+/** The prompt plus the text the evidence span must be quoted from. */
+interface JudgeInputs {
+  prompt: string;
+  outputText: string;
+}
+
+/** Throws on dataset bugs (wrong kind, unknown criterion); never on model failures. */
+function prepareJudgeInputs(args: {
+  rubric: Rubric;
+  assertion: Assertion;
+  evalCase: EvalCase;
+  output: Record<string, unknown>;
+}): JudgeInputs {
+  const { rubric, assertion, evalCase, output } = args;
+  if (assertion.kind !== "model_graded" || !assertion.criterion) {
+    throw new Error(
+      `Assertion "${assertion.id}" is not model_graded with a criterion — fix the case in the dataset`,
+    );
+  }
+  const outputText = JSON.stringify(output, null, 2);
+  return {
+    outputText,
+    prompt: buildJudgePrompt({
+      criterionKey: assertion.criterion,
+      rubric,
+      evalCase,
+      outputText,
+    }),
+  };
+}
+
+/**
+ * One judgment: the model call plus its single corrective retry.
+ *
+ * Returns a discriminated result rather than an AssertionResult so callers can
+ * tell a real verdict from a broken judge structurally, without sniffing the
+ * JUDGE_ERROR prefix out of a rationale string.
+ */
+type Judgment =
+  | { ok: true; result: AssertionResult }
+  | { ok: false; detail: string };
+
+async function judgeOnce(args: {
+  model: JudgeModel;
+  assertion: Assertion;
+  inputs: JudgeInputs;
+}): Promise<Judgment> {
+  const { model, assertion, inputs } = args;
+
+  let lastFailure = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const attemptPrompt =
+      attempt === 0
+        ? inputs.prompt
+        : `${inputs.prompt}\n\nYour previous reply was invalid (${lastFailure}). Reply again with ONLY the JSON object described above.`;
+
+    let verdict: JudgeVerdict;
+    try {
+      const reply = await model.invoke(attemptPrompt);
+      verdict = JudgeVerdictSchema.parse(JSON.parse(extractJson(reply)));
+    } catch (error) {
+      lastFailure = error instanceof Error ? error.message : String(error);
+      continue;
+    }
+
+    // Anti-sycophancy: a pass without a verifiable quote is not a pass.
+    if (verdict.passed && !spanAppearsIn(verdict.evidence_span, inputs.outputText)) {
+      lastFailure = "evidence_span was not a verbatim quote from AGENT OUTPUT";
+      continue;
+    }
+
+    return {
+      ok: true,
+      result: {
+        assertion_id: assertion.id,
+        passed: verdict.passed,
+        score: verdict.score,
+        rationale: verdict.rationale,
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    detail: `judge (${model.provider}/${model.modelId}) failed twice on "${assertion.criterion}": ${lastFailure}`,
+  };
+}
+
 /**
  * Judge one model_graded assertion against one case output.
  *
@@ -119,53 +207,98 @@ export async function judgeAssertion(args: {
   evalCase: EvalCase;
   output: Record<string, unknown>;
 }): Promise<AssertionResult> {
-  const { model, rubric, assertion, evalCase, output } = args;
-  if (assertion.kind !== "model_graded" || !assertion.criterion) {
-    throw new Error(
-      `Assertion "${assertion.id}" is not model_graded with a criterion — fix the case in the dataset`,
-    );
+  const inputs = prepareJudgeInputs(args);
+  const judgment = await judgeOnce({
+    model: args.model,
+    assertion: args.assertion,
+    inputs,
+  });
+  return judgment.ok
+    ? judgment.result
+    : errorResult(args.assertion, judgment.detail);
+}
+
+function mean(values: number[]): number {
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+/**
+ * Judge one assertion `repeats` times and record the MAJORITY verdict plus the
+ * agreement behind it.
+ *
+ * Why this exists: on 2026-08-12 the same criterion re-judged three times on
+ * unchanged inputs moved 15 points (free judge) and 10 points (claude-opus-5).
+ * A published finding of that size cannot rest on one judgment from either
+ * judge, so the harness votes and publishes how close the vote was.
+ *
+ * Rules, in order:
+ *  1. `repeats === 1` delegates to judgeAssertion and adds NOTHING to the
+ *     result. The default path stays byte-identical to every frozen baseline.
+ *  2. A judgment that failed is excluded from the vote, never counted as a
+ *     fail vote, and counted in `judgments_errored`.
+ *  3. Fewer successful judgments than a majority (floor(n/2) + 1) makes the
+ *     assertion ERRORED, not failed. The harness has always kept those apart.
+ *  4. A tie (only reachable with an even `repeats`) records a FAILURE and sets
+ *     `judgment_tied`. A judge split down the middle is not evidence of a pass.
+ */
+export async function judgeAssertionRepeated(args: {
+  model: JudgeModel;
+  rubric: Rubric;
+  assertion: Assertion;
+  evalCase: EvalCase;
+  output: Record<string, unknown>;
+  repeats: number;
+}): Promise<AssertionResult> {
+  const { model, assertion, repeats } = args;
+  if (!Number.isInteger(repeats) || repeats < 1) {
+    throw new Error(`JUDGE_REPEATS must be a positive integer, got ${repeats}`);
+  }
+  if (repeats === 1) return judgeAssertion(args);
+
+  const inputs = prepareJudgeInputs(args);
+  const votes: AssertionResult[] = [];
+  let errored = 0;
+  let lastFailure = "";
+  for (let i = 0; i < repeats; i++) {
+    const judgment = await judgeOnce({ model, assertion, inputs });
+    if (judgment.ok) {
+      votes.push(judgment.result);
+    } else {
+      errored += 1;
+      lastFailure = judgment.detail;
+    }
   }
 
-  const outputText = JSON.stringify(output, null, 2);
-  const prompt = buildJudgePrompt({
-    criterionKey: assertion.criterion,
-    rubric,
-    evalCase,
-    outputText,
-  });
-
-  let lastFailure = "";
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const attemptPrompt =
-      attempt === 0
-        ? prompt
-        : `${prompt}\n\nYour previous reply was invalid (${lastFailure}). Reply again with ONLY the JSON object described above.`;
-
-    let verdict: JudgeVerdict;
-    try {
-      const reply = await model.invoke(attemptPrompt);
-      verdict = JudgeVerdictSchema.parse(JSON.parse(extractJson(reply)));
-    } catch (error) {
-      lastFailure = error instanceof Error ? error.message : String(error);
-      continue;
-    }
-
-    // Anti-sycophancy: a pass without a verifiable quote is not a pass.
-    if (verdict.passed && !spanAppearsIn(verdict.evidence_span, outputText)) {
-      lastFailure = "evidence_span was not a verbatim quote from AGENT OUTPUT";
-      continue;
-    }
-
+  const majority = Math.floor(repeats / 2) + 1;
+  if (votes.length < majority) {
     return {
-      assertion_id: assertion.id,
-      passed: verdict.passed,
-      score: verdict.score,
-      rationale: verdict.rationale,
+      ...errorResult(
+        assertion,
+        `only ${votes.length} of ${repeats} judgments succeeded, short of the ${majority} needed for a majority; last failure: ${lastFailure}`,
+      ),
+      judgments: repeats,
+      judgments_agreeing: 0,
+      judgments_errored: errored,
     };
   }
 
-  return errorResult(
-    assertion,
-    `judge (${model.provider}/${model.modelId}) failed twice on "${assertion.criterion}": ${lastFailure}`,
-  );
+  const passVotes = votes.filter((v) => v.passed);
+  const failVotes = votes.filter((v) => !v.passed);
+  const tied = passVotes.length === failVotes.length;
+  // On a tie the failing side wins: a split judge is not evidence of a pass.
+  const winners = passVotes.length > failVotes.length ? passVotes : failVotes;
+  const note = tied
+    ? `[tie ${passVotes.length}-${failVotes.length} of ${repeats} judgments, recorded as a failure]`
+    : `[majority ${winners.length} of ${repeats} judgments${errored > 0 ? `, ${errored} errored` : ""}]`;
+
+  return {
+    assertion_id: assertion.id,
+    passed: passVotes.length > failVotes.length,
+    score: mean(winners.map((v) => v.score)),
+    rationale: `${note} ${winners[0]?.rationale ?? ""}`.trim(),
+    judgments: repeats,
+    judgments_agreeing: winners.length,
+    judgments_errored: errored,
+    ...(tied ? { judgment_tied: true } : {}),
+  };
 }

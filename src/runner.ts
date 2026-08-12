@@ -12,7 +12,7 @@
  * artifacts, nothing is silently a pass.
  */
 import type { AdapterOutput, AgentAdapter, Provider } from "./adapters/base.js";
-import { judgeAssertion } from "./judge/llm_judge.js";
+import { judgeAssertion, judgeAssertionRepeated } from "./judge/llm_judge.js";
 import { loadRubric, type Rubric, type RubricAgent } from "./judge/rubrics.js";
 import type {
   Assertion,
@@ -43,6 +43,11 @@ export interface RunOptions {
    * every assertion must pass; weights <1 only soften when lowered.
    */
   passThreshold?: number;
+  /**
+   * Judgments per model_graded assertion; the verdict is the majority.
+   * Defaults to settings.JUDGE_REPEATS, which itself defaults to 1.
+   */
+  judgeRepeats?: number;
   /* Injectables — tests swap these; production uses the defaults. */
   adapter?: AgentAdapter;
   judgeModel?: JudgeModel;
@@ -97,6 +102,7 @@ async function evaluateCase(args: {
   judgeModel: JudgeModel;
   rubric: Rubric;
   passThreshold: number;
+  judgeRepeats: number;
   timestamp: Date;
 }): Promise<CaseResult> {
   const { evalCase, adapterOutput } = args;
@@ -124,15 +130,26 @@ async function evaluateCase(args: {
     } else {
       // judgeAssertion returns JUDGE_ERROR results for model failures and
       // throws only on dataset bugs — map those to error results too.
+      // The repeats > 1 branch is spelled out rather than folded into one call
+      // so the default path is visibly the same code it has always been.
       try {
         assertionResults.push(
-          await judgeAssertion({
-            model: args.judgeModel,
-            rubric: args.rubric,
-            assertion,
-            evalCase,
-            output: adapterOutput.output,
-          }),
+          args.judgeRepeats > 1
+            ? await judgeAssertionRepeated({
+                model: args.judgeModel,
+                rubric: args.rubric,
+                assertion,
+                evalCase,
+                output: adapterOutput.output,
+                repeats: args.judgeRepeats,
+              })
+            : await judgeAssertion({
+                model: args.judgeModel,
+                rubric: args.rubric,
+                assertion,
+                evalCase,
+                output: adapterOutput.output,
+              }),
         );
       } catch (error) {
         assertionResults.push(
@@ -190,6 +207,7 @@ export async function runEval(options: RunOptions): Promise<RunOutcome> {
   const now = options.now ?? (() => new Date());
   const runsDir = options.runsDir ?? DEFAULT_RUNS_DIR;
   const passThreshold = options.passThreshold ?? 1.0;
+  const judgeRepeats = options.judgeRepeats ?? options.settings.JUDGE_REPEATS;
   const startedAt = now();
   const runId = makeRunId(options.agent, options.provider, startedAt);
   const adapter = options.adapter ?? getAdapter(options.agent);
@@ -246,6 +264,7 @@ export async function runEval(options: RunOptions): Promise<RunOutcome> {
         judgeModel,
         rubric,
         passThreshold,
+        judgeRepeats,
         timestamp: now(),
       }),
     );
@@ -270,6 +289,21 @@ export async function runEval(options: RunOptions): Promise<RunOutcome> {
     ]),
   );
 
+  // Judge agreement across every repeated judgment in the run. Only assertions
+  // that actually carry the bookkeeping count, so deterministic checks never
+  // dilute the figure.
+  let totalJudgments = 0;
+  let agreeingJudgments = 0;
+  for (const result of results) {
+    for (const assertionResult of result.assertion_results) {
+      if (assertionResult.judgments === undefined) continue;
+      totalJudgments += assertionResult.judgments;
+      agreeingJudgments += assertionResult.judgments_agreeing ?? 0;
+    }
+  }
+  const judgeAgreementRate =
+    totalJudgments === 0 ? null : agreeingJudgments / totalJudgments;
+
   const regressions = options.baselineRunId
     ? regressionsAgainstBaseline(runsDir, options.baselineRunId, perAssertionRates)
         .regressions
@@ -292,6 +326,14 @@ export async function runEval(options: RunOptions): Promise<RunOutcome> {
         ? null
         : results.filter((r) => r.passed).length /
           (results.length - erroredCases),
+    // Absent at the default of 1, so a single-judgment summary.json keeps the
+    // exact key set the frozen baselines have.
+    ...(judgeRepeats > 1
+      ? {
+          judge_repeats: judgeRepeats,
+          judge_agreement_rate: judgeAgreementRate,
+        }
+      : {}),
     per_assertion_pass_rate: perAssertionRates,
     baseline_run_id: options.baselineRunId ?? null,
     regressions,

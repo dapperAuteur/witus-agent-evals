@@ -83,6 +83,42 @@ runs/compare-<a>-vs-<b>.md   provider comparison
 Judge failures are never silent passes: a broken judge shows up as `JUDGE_ERROR`
 rationales, and a crashed agent as an error case; both fail loudly in the report.
 
+## Repeated judging (`JUDGE_REPEATS`)
+
+`JUDGE_REPEATS` sets how many times each `model_graded` assertion is judged. The
+verdict is the **majority** of those judgments.
+
+**Default 1**, which is one judgment and exactly the artifacts this harness has
+always written, so every frozen baseline stays comparable. Set it (3 or 5, odd)
+when a number is going to be published:
+
+```sh
+JUDGE_REPEATS=3 pnpm evals run --agent coach_multiagent --provider claude
+```
+
+Why: a 2026-08-12 stability probe re-judged one criterion three times on
+unchanged inputs and got 55.0 / 65.0 / 70.0 percent from the free judge and
+45.0 / 35.0 / 40.0 percent from `claude-opus-5`. Both swings are as large as
+findings this repo has published, so one judgment per case cannot carry a
+finding whichever judge is configured.
+
+What gets recorded when repeats > 1:
+
+- Per assertion: `judgments`, `judgments_agreeing`, `judgments_errored`, and
+  `judgment_tied`. Absent at the default, so single-judgment JSONL is unchanged.
+- Per run: `judge_repeats` and `judge_agreement_rate` (agreeing judgments over
+  total judgments) in `summary.json`, and a judge-agreement row in `report.md`.
+- A judgment that fails is excluded from the vote instead of counting as a fail
+  vote. If fewer than a majority succeed, the assertion is **errored**, not
+  failed.
+- An even count can tie. A tie is recorded as a **failure** and marked
+  `judgment_tied`, because a split judge is not evidence of a pass.
+- Below 85 percent agreement the report leads with a blockquote saying the run
+  is not a measurement, the same treatment an errored run gets.
+
+Repeats cost judge calls, not agent calls: cached agent output means re-judging
+never re-runs an agent.
+
 ## Extending
 
 - **Add a case:** append a line to `datasets/<agent>/cases.jsonl` (see
